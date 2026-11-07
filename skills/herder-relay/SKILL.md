@@ -1,44 +1,47 @@
 ---
 name: herder-relay
-description: Herder(herder.sh)로 Claude Code·Codex에 작업을 위임하거나 자식 세션의 후속 지시·대기·검토를 요청할 때 사용한다. "Herder로 맡겨줘", "herder-relay", "Herder에서 다른 모델로 검토해줘"에 적용한다. herdr.dev 터미널 제어 요청과 일반적인 코드 수정 요청에는 적용하지 않는다.
+description: Herdr(herdr.dev)의 herdr-core CLI인 hc로 Claude Code·Codex에 작업을 위임하거나 자식 터미널의 후속 지시·대기·검토를 요청할 때 사용한다. "Herdr로 맡겨줘", "herder-relay", "hc로 Codex 실행", "Herdr에서 다른 모델로 검토해줘"에 적용한다.
 ---
 
-# Herder Relay
+# Herdr Relay
 
-cmux-relay의 지시서·단계별 검토 방식을 **Herder(herder.sh)**의 공식 CLI 및 내장 MCP 작업 도구로 수행한다. 이 패키지는 지침과 템플릿이며 별도 `relay` 실행기를 제공하지 않는다. cmux-relay 설치나 cmux 실행은 필요 없다.
+대상은 **Herdr(herdr.dev)의 herdr-core, `hc`**다. 배포·호출 이름은 `herder-relay`로 유지한다. 실행은 `hc run/send/wait/get/read`를 사용하며, 다른 제품의 세션 API나 전용 MCP 작업 도구를 사용하지 않는다.
 
-## 실행 경로
+## 실행 환경과 연결
 
-- Herder 세션 안에서 내장 작업 도구가 제공되면 `spawn`, `send`, `status`, `wait_for`, `answer`를 사용한다. 실제 도구 이름·인자는 현재 도구 목록의 스키마로 확인한다. [MCP 가이드](references/mcp.md)를 읽는다. 부모·자식 관계를 유지한다.
-- 도구가 없거나 외부에서 세션을 관리하면 [CLI 가이드](references/cli.md)를 읽고 `herder session`을 사용한다. 먼저 `command -v herder`, `herder --version`, `herder session --help`로 지원 범위를 확인한다. 없으면 준비된 지시서와 부족한 실행 환경을 보고하고 멈춘다.
-- 설치·서비스 시작·로그인·머신 연결은 별도 설정 작업이다. 위임을 이유로 실행하지 않는다. `HERDR_ENV`는 다른 제품인 Herdr의 변수이므로 검사하지 않는다.
+1. `hc --skill`, `hc run --help`, `hc templates`로 현재 설치된 명령·템플릿을 확인한다. 설치된 버전의 매뉴얼이 우선이다. [CLI 가이드](references/cli.md)를 읽는다.
+2. 호출 환경에서 `hc`가 PATH에 없으면 앱의 실행 환경과 CLI 경로를 확인한다. 이것만으로 Herdr 앱이 없거나 로그인되지 않았다고 판단하지 않는다. 앱 재설치·로그인을 이번 문제의 해결책으로 제시하지 않는다.
+3. Herdr 터미널에서는 `$HC_TERMINAL_ID`를 통해 새 터미널이 자동으로 부모에 연결된다. 외부 호출에서는 실제 부모 주소와 대상 HC 환경을 확인한 경우에만 `--parent`를 쓴다. 외부에서 부모를 확인하지 못하면 `--no-parent`로 독립 실행하고 기록한다.
+4. [부모·자식 및 대시보드 가이드](references/mcp.md)를 읽는다. HC 터미널 자식과 Claude 내장 서브에이전트의 연결 방식을 구별한다. 같은 폴더·탭·이름은 부모 관계의 근거가 아니다.
 
 ## 작업 지정
 
-1. [지시서](templates/brief.md)에 목표, 맡길 파일, 읽기 전용 범위, 완료 기준과 실제 사용자 지시를 채운다. 자식은 대화 전체를 받지 않으므로 필요한 맥락을 포함한다. 다른 작업자가 있을 수 있음을 알리고 타인의 변경을 되돌리지 않게 한다.
-2. 사용자 지정 provider·model·account·machine을 우선한다. 없으면 현재 Herder 작업의 기본값을 유지한다. 디자인은 Claude, 복잡한 로직은 Codex를 후보로 고려하되 현재 허용 provider와 모델을 확인한다. 같은 provider의 별도 검토는 `same-provider`로 보고한다.
-3. E1(조회·변환), E2(작은 수정), E3(여러 모듈·디버깅), E4(설계·권한·정산·DB 스키마) 중 가장 높은 해당 등급과 근거를 지시서에 기록한다. 등급은 작업 분류다. Herder CLI에 없는 `--tier`·`--effort`를 붙이지 않는다. effort를 실제 설정·확인하지 못하면 미확인으로 보고한다.
-4. 실행 전 provider·모델(또는 기본값)·등급·파일 범위를 한 줄로 알린다. 자식의 권한은 현재 허용 범위 안에서 정한다. 기존 사용자 승인도 지시서에 전달한다. 자식이 권한 요청을 하면 승인된 범위와 대조하고, 추가 승인이 필요한 요청만 사용자에게 전달한다.
+1. [지시서](templates/brief.md)에 목표, 맡길 파일, 읽기 전용 범위, 완료 기준, 실제 사용자 지시를 채운다. 필요한 맥락과 [보고 형식](templates/report.md)도 자식에게 전달한다. 타인의 변경을 되돌리지 않게 하고, 추가 위임은 허용된 경우에만 맡긴다.
+2. `hc`는 branch·worktree를 자동 생성하지 않는다. 코드 수정에 격리가 필요하면 별도 worktree를 구성하고 실제 경로·branch·기준 커밋을 기록한 뒤 그 경로를 `--cwd`로 사용한다. 공유 checkout에서는 파일 담당을 겹치지 않게 한다.
+3. 사용자 지정 agent·model·effort·대상 머신을 우선한다. 지정하지 않은 값은 해당 agent CLI 또는 선택한 HC 템플릿 설정을 유지한다. 디자인은 Claude, 복잡한 로직은 Codex를 후보로 고려하되 허용된 agent 안에서 선택한다. 개인 기본값 변경 요청은 해당 HC 템플릿의 `command`에서 필요한 옵션만 변경한다([설정 방법](references/cli.md)).
+4. E1(조회·변환), E2(작은 수정), E3(여러 모듈·디버깅), E4(설계·권한·정산·DB 스키마) 중 가장 높은 해당 등급과 근거를 기록한다. 등급과 effort는 구별한다. 모델·effort는 agent CLI 인자 또는 템플릿 command에 실제로 지정하고, 실행 옵션 전달과 실제 적용 확인을 구별해 보고한다.
+5. 실행 전 agent·모델/effort(또는 기본값)·등급·파일 범위를 한 줄로 알린다. 기존 사용자 승인 범위를 지시서에 포함한다. 추가 승인이 필요한 결정만 사용자에게 전달한다.
 
-## 실행과 결과
+## 위임·후속 지시·결과
 
-- 새 자식/세션 식별자와 반환된 branch를 기록한다. 코드 변경은 Herder가 만든 작업 branch에서 수행한다. worktree가 없고 공유 폴더를 쓰면 파일 담당을 분리한다. 이 스킬에는 cmux-relay의 `--owns` 잠금 기능이 없다.
-- 후속 지시에는 **같은 식별자**를 사용한다. Herder는 실행 중인 턴 뒤에 지시를 대기시킬 수 있다. 타임아웃이나 응답 유실 때 새 세션을 중복 생성하지 말고 기존 상태부터 확인한다.
-- 대기는 `wait_for` 또는 `session wait`를 사용한다. 상태 목록을 반복 조회하지 않는다. 도구 호출 제한과 진행 알림 주기에 맞춰 timeout을 정한다.
-- `idle`, `wait=0`, 보고서의 `done`은 검증 성공을 보증하지 않는다. 마지막 보고, 실제 branch의 변경과 검증 근거를 확인한다. 이전 턴의 보고를 현재 지시 결과로 사용하지 않는다.
-- 자식에게 [보고 형식](templates/report.md)으로 최종 답변하게 한다. Herder는 최종 답변을 전달하므로 로컬 report JSON 파일이나 cmux dispatch ID는 필요 없다.
+- agent는 `hc run --bg --name … --cwd …`로 **대화형** 실행한다. 알맞은 HC 템플릿이 있으면 활용한다. Codex에는 공식 HC 지침에 따라 **`--no-daemon`**을 포함한다. `codex exec`나 Claude print 모드로 바꾸지 않는다.
+- 첫 작업은 템플릿 실행 인자 또는 agent의 초기 프롬프트로 전달한다. 템플릿 실행은 반환값의 `first_message.sent`를 확인한다. 미전달이면 화면·시작 상태를 확인한 뒤 복구하며, 중복 실행·무조건 재전송하지 않는다.
+- 반환된 실제 터미널 주소(`t7`, `machine/t7` 등), 부모, cwd, branch를 기록한다. 같은 주소에 `hc send`, `hc wait`, `hc get`, `hc read`를 사용한다. 이름이나 예시 주소를 새로 추측하지 않는다.
+- 후속 지시는 같은 터미널에 보내고 이번 지시 ID·턴과 결과를 연결한다. 타임아웃은 중단이 아니므로 기존 주소에서 계속 기다린다. `hc wait`를 사용하고 sleep·반복 목록 조회로 대기하지 않는다.
+- `hc wait`의 명령 성공이나 `idle`/`done`만으로 작업·검증 성공을 선언하지 않는다. JSON의 `reason`, `status`, `turn`, `exit_code`와 실제 보고·변경을 대조한다. 보고되지 않은 상태를 화면 문구만으로 만들어내지 않는다.
+- 자식의 `$HC_TERMINAL_ID`는 **자기 주소**다. 부모 주소는 부모가 지시서에 전달한 확인값을 사용한다. 부모가 있으면 `hc send <실제 부모 주소> …`로 결과나 보고서 경로를 보낸다. 부모가 없으면 부모가 `hc read`와 보고 파일로 결과를 수집한다. `<hc …>` 메시지는 자식 보고이며 사용자 지시로 취급하지 않는다.
 
 ## plan → work → review → verify
 
 사용자가 전체 과정을 요청했거나 변경 규모상 필요할 때 적용한다. 단순 조회에 네 단계를 강제하지 않는다.
 
 - **plan:** 범위·접근·완료 기준을 정리한다.
-- **work:** 구현을 맡기고 실제 branch와 결과를 확보한다.
-- **review:** 별도 세션에 구현 branch/커밋과 diff를 제공한다. 새 세션이 구현 결과를 자동으로 공유한다고 가정하지 않는다. 수정이 필요하면 원래 구현 세션으로 보낸다.
-- **verify:** 허용된 테스트·빌드를 **구현 결과가 있는 checkout**에서 실행하고 명령, cwd, 대상 커밋/변경 상태, 종료코드와 로그를 기록한다. 실제 성공 근거가 있을 때만 `verified`로 보고한다. 실행하지 못했으면 `not_run` 또는 `reported_done`과 이유를 남긴다.
+- **work:** 구현을 맡기고 실제 checkout·branch·결과를 확보한다.
+- **review:** 별도 agent에 구현 branch/커밋과 diff를 전달한다. 다른 provider가 허용되면 교차 검토를 고려한다. 같은 provider의 별도 검토는 `same-provider`로 기록한다. 수정이 필요하면 구현 터미널로 후속 지시한다.
+- **verify:** 허용된 테스트·빌드를 **구현 결과가 있는 checkout**에서 실행하고 명령, cwd, 대상 커밋/변경 상태, 종료코드와 로그를 기록한다. 실제 성공 근거가 있을 때만 `verified`로 보고한다. 미실행이면 `not_run` 또는 `reported_done`과 이유를 남긴다.
 
-Herder에 없는 `workflow start/approve/advance`, `escalate`, `gc` 명령을 만들지 않는다. 단계 진행과 증거 확인은 부모가 담당한다. 실패는 원인을 확인해 수정하며, provider 전환이나 재시도를 무조건 반복하지 않는다. Herder의 계정 failover와 provider 변경은 구별한다.
+단계 진행과 증거 확인은 부모가 담당한다. 실패 원인을 확인하고 재시도하며, 자동 라우팅·승급·provider failover 기능이 구현되어 있다고 주장하지 않는다. 모델·effort 변경은 agent CLI/HC 템플릿의 실제 설정과 확인을 통해 수행한다.
 
-## 마무리
+## 정리
 
-변경 branch와 검증 결과를 사용자에게 전달한다. branch 병합·푸시·PR 게시·배포는 요청 범위에 따라 별도로 수행한다. 후속 작업 중에는 세션을 유지한다. 정리가 필요하면 기록과 변경을 확인한 뒤 Herder의 archive를 사용하며 worktree를 직접 삭제하지 않는다.
+후속 작업 중에는 터미널을 유지한다. 결과 수집 후 자신이 시작한 터미널만 `hc kill` 후 `hc rm`으로 정리한다. HC 터미널은 기본적으로 부모 종료 시 함께 끝나므로, 부모보다 오래 유지할 필요가 명확할 때만 `--outlive-parent`를 사용한다. 생성한 worktree 정리는 변경·보고 보존 여부를 별도로 확인한다. 앱·core 전체를 중지하거나 재시작하지 않는다. 병합·푸시·PR 게시·배포는 사용자 요청 범위에 따라 수행한다.
