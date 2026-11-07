@@ -7,17 +7,31 @@ Herder 내장 MCP 작업 도구를 우선하고, 외부에서는 `herder session
 
 ## 설치
 
-### 공개 배포본
+### npx skills (권장)
 
-저장소: [ysk9926/herder-relay](https://github.com/ysk9926/herder-relay)
+cmux-relay와 같은 방식으로 설치한다. Node.js가 설치된 환경에서 실행한다.
 
-[최신 릴리스](https://github.com/ysk9926/herder-relay/releases/latest)에서 `herder-relay.zip`을 내려받거나 저장소를 복제한다.
+```bash
+npx skills add ysk9926/herder-relay@herder-relay -g -y
+```
+
+특정 에이전트에만 설치하려면 `-a codex` 또는 `-a claude-code`를 추가한다. 현재 프로젝트에 설치하려면 `-g`를 생략한다.
+
+```bash
+npx skills add ysk9926/herder-relay@herder-relay -a codex claude-code -y
+```
+
+공개 Git 저장소의 `skills/herder-relay/`를 직접 가져오므로 ZIP 다운로드나 별도 npm 패키지 배포가 필요하지 않다. 새 에이전트 세션에서 `$herder-relay`를 사용한다.
+
+### 수동 설치
+
+필요하면 [최신 릴리스](https://github.com/ysk9926/herder-relay/releases/latest)의 `herder-relay.zip`을 내려받거나 저장소를 복제한다.
 
 ```bash
 git clone https://github.com/ysk9926/herder-relay.git
 ```
 
-스킬 폴더는 `skills/herder-relay/`이다. 릴리스 ZIP에는 같은 스킬이 최상위 `herder-relay/` 폴더에 들어 있다.
+스킬 폴더는 `skills/herder-relay/`이다. 릴리스 ZIP에는 같은 스킬이 최상위 `herder-relay/` 폴더에 들어 있다. ZIP은 수동 설치용 보조 배포본이다.
 
 ### Herder 공용 스킬 라이브러리
 
