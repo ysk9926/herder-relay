@@ -99,7 +99,9 @@ hc read ADDRESS --lines 100
 
 ## 정리
 
-후속 작업이 끝나고 결과를 보존한 뒤 **자신이 시작한 터미널만** `hc kill ADDRESS`, `hc rm ADDRESS`로 정리한다. `hc interrupt`는 현재 턴을 중단하고 `hc kill`은 프로그램을 끝내므로 구별한다. worktree·branch는 별도 관리한다. core 전체의 stop/restart나 앱 재설치를 수행하지 않는다.
+새 Git 프로젝트 작업은 [생명주기 도구](cleanup.md)로 자원을 생성·기록하고, 완료 확인 후 `finish`를 호출해 보고·로그 보존 → HC 종료 → 관리 worktree 제거를 수행한다. `hc` 자체가 Git 격리나 결과 검증을 대신하는 것은 아니다.
+
+직접 실행한 기존 작업은 자동 등록·삭제하지 않는다. 실제 소유권과 후속 작업 종료를 확인하고 보고·로그를 외부에 보존한 뒤 **자신이 시작한 터미널만** `hc kill ADDRESS`, `hc rm ADDRESS`로 정리한다. `hc interrupt`는 현재 턴을 중단하고 `hc kill`은 프로그램을 끝내므로 구별한다. worktree는 가이드의 Git 확인 절차로 별도 관리하며 branch는 보존한다. core 전체의 stop/restart나 앱 재설치를 수행하지 않는다.
 
 ## 출처
 
