@@ -1,0 +1,3 @@
+interface:
+  display_name: "Herder Relay"
+  short_description: "Herder에서 Claude·Codex 작업 위임과 후속 지시·검토·검증을 진행"
